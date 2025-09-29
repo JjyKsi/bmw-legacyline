@@ -61,7 +61,13 @@ class VehicleSummary:
 class VehicleService:
     """Fetch vehicle metadata from the ConnectedDrive API."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, token_manager: TokenManager) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry: ConfigEntry,
+        token_manager: TokenManager,
+        debug_enabled: bool,
+    ) -> None:
         self._hass = hass
         self._entry = entry
         self._token_manager = token_manager
@@ -69,6 +75,7 @@ class VehicleService:
         region = entry.data.get(CONF_REGION, "row")
         self._x_user_agent = _generate_mobile_agent(region)
         self._X_user_agent = f"android(SP1A.210812.016.C1);bmw;99.0.0(99999);{region}"
+        self._debug_enabled = debug_enabled
 
     async def async_fetch(self) -> dict[str, VehicleSummary]:
         """Fetch the latest vehicle summaries."""
@@ -80,6 +87,9 @@ class VehicleService:
         region = REGION_CONFIGS.get(region_key)
         if not region:
             raise ConfigEntryNotReady(f"Unsupported region: {region_key}")
+
+        if self._debug_enabled:
+            LOGGER.debug("VehicleService[%s]: fetching vehicles for region=%s", self._entry.entry_id, region_key)
 
         try:
             token = await self._token_manager.async_get_access_token()
@@ -99,11 +109,18 @@ class VehicleService:
         except ConfigEntryNotReady:
             raise
 
+        if self._debug_enabled:
+            LOGGER.debug(
+                "VehicleService[%s]: enumerated %d vehicles", self._entry.entry_id, len(vehicles)
+            )
+
         summaries: dict[str, VehicleSummary] = {}
         for vehicle in vehicles:
             vin = _extract_vin(vehicle)
             if not vin:
                 continue
+            if self._debug_enabled:
+                LOGGER.debug("VehicleService[%s]: processing VIN %s", self._entry.entry_id, vin)
 
             try:
                 profile = await self._async_get_vehicle_profile(region, headers, vin)
@@ -169,6 +186,13 @@ class VehicleService:
                     headers=headers,
                     params=params,
                 ) as response:
+                    if self._debug_enabled:
+                        LOGGER.debug(
+                            "VehicleService[%s]: GET %s status=%s",
+                            self._entry.entry_id,
+                            url,
+                            response.status,
+                        )
                     if response.status == 401:
                         raise ConfigEntryAuthFailed("Unauthorized")
                     if response.status >= 500:
@@ -178,7 +202,20 @@ class VehicleService:
                         raise UpdateFailed(f"HTTP {response.status}: {text}")
 
                     if response.content_type == "application/json":
-                        return await response.json()
+                        payload = await response.json()
+                        if self._debug_enabled:
+                            if isinstance(payload, dict):
+                                detail = list(payload.keys())
+                            elif isinstance(payload, list):
+                                detail = f"list(len={len(payload)})"
+                            else:
+                                detail = type(payload).__name__
+                            LOGGER.debug(
+                                "VehicleService[%s]: response payload detail=%s",
+                                self._entry.entry_id,
+                                detail,
+                            )
+                        return payload
                     text = await response.text()
                     raise UpdateFailed("Unexpected response type")
         except ConfigEntryAuthFailed:
@@ -189,6 +226,13 @@ class VehicleService:
             raise ConfigEntryNotReady("Vehicle request timed out") from err
         except ClientError as err:
             raise UpdateFailed(str(err)) from err
+        finally:
+            if self._debug_enabled:
+                LOGGER.debug(
+                    "VehicleService[%s]: completed request to %s",
+                    self._entry.entry_id,
+                    url,
+                )
 
 
 def _build_headers(

@@ -34,5 +34,16 @@
         "name": "Drive train"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Cardata Legacyline options",
+        "description": "Enable verbose logging while developing the integration.",
+        "data": {
+          "debug_logging": "Enable debug logging"
+        }
+      }
+    }
   }
 }

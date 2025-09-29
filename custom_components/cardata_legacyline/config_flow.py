@@ -15,6 +15,7 @@ from homeassistant.helpers.aiohttp_client import async_create_clientsession
 from .auth import AuthClient, AuthError, REGION_CONFIGS
 from .const import (
     CONF_CAPTCHA,
+    CONF_DEBUG,
     CONF_REGION,
     DATA_TOKEN,
     DATA_TOKEN_EXPIRES_AT,
@@ -121,3 +122,34 @@ class CardataLegacylineConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> config_entries.OptionsFlow:
+        return CardataLegacylineOptionsFlow(config_entry)
+
+
+class CardataLegacylineOptionsFlow(config_entries.OptionsFlow):
+    """Handle options for the Cardata Legacyline integration."""
+
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+        self._entry = config_entry
+
+    async def async_step_init(
+        self, user_input: Mapping[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Manage the integration options."""
+
+        if user_input is not None:
+            return self.async_create_entry(title="", data=dict(user_input))
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_DEBUG,
+                    default=self._entry.options.get(CONF_DEBUG, False),
+                ): bool,
+            }
+        )
+
+        return self.async_show_form(step_id="init", data_schema=schema)

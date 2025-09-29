@@ -6,6 +6,7 @@ import asyncio
 import base64
 import hashlib
 import json
+import logging
 import secrets
 from dataclasses import dataclass
 from datetime import timedelta
@@ -27,6 +28,8 @@ _AUTHENTICATE_PATH = "/oauth/authenticate"
 _TOKEN_PATH = "/oauth/token"
 _TIMEOUT = 30
 _EARLY_EXPIRY_BUFFER = timedelta(minutes=15)
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -88,8 +91,9 @@ class AuthResult:
 class AuthClient:
     """Performs the OAuth handshake against ConnectedDrive."""
 
-    def __init__(self, session: aiohttp.ClientSession) -> None:
+    def __init__(self, session: aiohttp.ClientSession, debug_enabled: bool = False) -> None:
         self._session = session
+        self._debug_enabled = debug_enabled
 
     async def async_login(
         self,
@@ -104,6 +108,8 @@ class AuthClient:
         if not region:
             raise AuthError("unknown", f"Unsupported region: {region_key}")
 
+        if self._debug_enabled:
+            LOGGER.debug("AuthClient: starting login for region=%s", region_key)
         try:
             return await self._async_login_region(region, email, password, captcha_token)
         except AuthError:
@@ -203,6 +209,10 @@ class AuthClient:
                 headers=headers,
                 allow_redirects=False,
             ) as response:
+                if self._debug_enabled:
+                    LOGGER.debug(
+                        "AuthClient: authenticate status=%s", response.status
+                    )
                 payload = await self._decode_json_response(response)
 
         redirect_to = payload.get("redirect_to")
@@ -236,6 +246,10 @@ class AuthClient:
             ) as response:
                 location = response.headers.get("Location")
                 body = await response.text()
+                if self._debug_enabled:
+                    LOGGER.debug(
+                        "AuthClient: authorization code status=%s", response.status
+                    )
 
         if response.status != 302:
             # Try to surface server-side JSON errors if available.
@@ -284,6 +298,10 @@ class AuthClient:
                 headers=headers,
                 allow_redirects=False,
             ) as response:
+                if self._debug_enabled:
+                    LOGGER.debug(
+                        "AuthClient: token request status=%s", response.status
+                    )
                 payload = await self._decode_json_response(response)
 
         if "error" in payload:
@@ -304,11 +322,16 @@ class AuthClient:
                 expires_at = now
         token_payload["region"] = region.key
 
-        return AuthResult(
+        result = AuthResult(
             region=region,
             token_payload=token_payload,
             token_expires_at=expires_at.isoformat(),
         )
+        if self._debug_enabled:
+            LOGGER.debug(
+                "AuthClient: obtained token for region=%s expires=%s", region.key, result.token_expires_at
+            )
+        return result
 
     async def _decode_json_response(self, response: aiohttp.ClientResponse) -> Dict[str, Any]:
         """Decode a JSON payload and surface HTTP errors."""

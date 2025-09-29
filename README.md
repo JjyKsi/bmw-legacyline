@@ -14,3 +14,4 @@ Custom integration scaffold for connecting Home Assistant to Cardata's Legacylin
 - The integration uses the domain `cardata_legacyline`. The initial configuration flow signs in with email, password, region, and a single-use captcha token before any platforms are loaded.
 - Access and refresh tokens are stored in the config entry data and refreshed automatically with the documented OAuth flow.
 - On startup the integration requests the ConnectedDrive vehicle list/profile and exposes static sensors for each discovered VIN.
+- Use the integration options (Configuration → Integrations → Cardata Legacyline → Configure) to toggle verbose debug logging during development.

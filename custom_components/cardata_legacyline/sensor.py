@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
@@ -13,9 +14,11 @@ from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from . import get_vehicle_coordinator
+from . import get_vehicle_coordinator, is_debug_enabled
 from .const import DOMAIN
 from .vehicle_manager import VehicleCoordinator, VehicleSummary
+
+LOGGER = logging.getLogger(__name__)
 
 
 @dataclass
@@ -56,6 +59,7 @@ async def async_setup_entry(
     """Set up vehicle sensors for a config entry."""
 
     coordinator = get_vehicle_coordinator(hass, entry.entry_id)
+    debug_enabled = is_debug_enabled(hass, entry.entry_id)
     known_vins: set[str] = set()
 
     @callback
@@ -72,6 +76,13 @@ async def async_setup_entry(
                 )
         if new_entities:
             async_add_entities(new_entities)
+            if debug_enabled:
+                LOGGER.debug(
+                    "Sensor setup[%s]: added %d entities (VINs: %s)",
+                    entry.entry_id,
+                    len(new_entities),
+                    list(known_vins),
+                )
 
     _async_add_entities()
     entry.async_on_unload(coordinator.async_add_listener(_async_add_entities))
