@@ -1,0 +1,25 @@
+{
+  "title": "Cardata Legacyline",
+  "config": {
+    "step": {
+      "user": {
+        "title": "Cardata Legacyline",
+        "description": "Sign in with your BMW ConnectedDrive credentials and a fresh captcha token.",
+        "data": {
+          "email": "Email",
+          "password": "Password",
+          "captcha": "Captcha token",
+          "region": "Region"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Authentication failed. Check your email, password, or captcha token.",
+      "cannot_connect": "Could not reach the ConnectedDrive servers. Try again later.",
+      "unknown": "Unexpected error. See logs for details."
+    },
+    "abort": {
+      "reauth_successful": "Re-authentication successful."
+    }
+  }
+}

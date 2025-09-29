@@ -1,0 +1,6 @@
+{
+  "name": "Cardata Legacyline",
+  "content_in_root": false,
+  "render_readme": true,
+  "domains": ["cardata_legacyline"]
+}
