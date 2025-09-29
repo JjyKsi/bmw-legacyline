@@ -35,6 +35,7 @@ class RegionConfig:
 
     key: str
     auth_base: str
+    api_base: str
     client_id: str
     state: str
     basic_authorization: str
@@ -44,6 +45,7 @@ REGION_CONFIGS: dict[str, RegionConfig] = {
     "row": RegionConfig(
         key="row",
         auth_base="https://customer.bmwgroup.com/gcdm",
+        api_base="https://cocoapi.bmwgroup.com",
         client_id="31c357a0-7a1d-4590-aa99-33b97244d048",
         state="cEG9eLAIi6Nv-aaCAniziE_B6FPoobva3qr5gukilYw",
         basic_authorization=(
@@ -54,6 +56,7 @@ REGION_CONFIGS: dict[str, RegionConfig] = {
     "na": RegionConfig(
         key="na",
         auth_base="https://login.bmwusa.com/gcdm",
+        api_base="https://cocoapi.bmwgroup.us",
         client_id="54394a4b-b6c1-45fe-b7b2-8fd3aa9253aa",
         state="rgastJbZsMtup49-Lp0FMQ",
         basic_authorization=(

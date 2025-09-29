@@ -21,5 +21,18 @@
     "abort": {
       "reauth_successful": "Re-authentication successful."
     }
+  },
+  "entity": {
+    "sensor": {
+      "model": {
+        "name": "Model"
+      },
+      "brand": {
+        "name": "Brand"
+      },
+      "drive_train": {
+        "name": "Drive train"
+      }
+    }
   }
 }
